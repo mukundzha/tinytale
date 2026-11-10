@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Training data
+data/raw/*
+data/processed/*
+
+# Model checkpoints
+checkpoints/
+*.pt
+*.pth
+
+# Environment variables
+.env
+
+# Jupyter
+.ipynb_checkpoints/
