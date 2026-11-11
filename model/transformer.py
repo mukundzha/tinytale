@@ -54,11 +54,16 @@ class TaleWizard(nn.Module):
         return self.head(x)
 
     @torch.no_grad()
-    def generate(self, idx, max_new_tokens):
+    def generate(self, idx, max_new_tokens, temperature=0.8, top_k=40):
         for _ in range(max_new_tokens):
             short = idx[:, -self.block_size:]
-            logits = self(short)[:, -1, :]
-            next_id = torch.argmax(logits, dim=-1, keepdim=True)
+            logits = self(short)[:, -1, :] / temperature
+            if top_k is not None:
+                k = min(top_k, logits.size(-1))
+                cut = torch.topk(logits, k).values[:, -1:]
+                logits = logits.masked_fill(logits < cut, -float("inf"))
+            probs = torch.softmax(logits, dim=-1)
+            next_id = torch.multinomial(probs, num_samples=1)
             idx = torch.cat([idx, next_id], dim=1)
         return idx
 

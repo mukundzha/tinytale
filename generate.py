@@ -14,6 +14,7 @@ if not CHECKPOINT.exists():
 
 prompt = sys.argv[1] if len(sys.argv) > 1 else "Once upon a time"
 max_new_tokens = int(sys.argv[2]) if len(sys.argv) > 2 else 500
+temperature = float(sys.argv[3]) if len(sys.argv) > 3 else 0.8
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -33,5 +34,5 @@ model.eval()
 
 ids = tok.encode(prompt)
 x = torch.tensor(ids, dtype=torch.long, device=device).unsqueeze(0)
-out = model.generate(x, max_new_tokens)
+out = model.generate(x, max_new_tokens, temperature=temperature)
 print(tok.decode(out[0].tolist()))
