@@ -21,6 +21,9 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 tok = Tokenizer.load("tokenizer/vocab.json")
 state = torch.load(CHECKPOINT, map_location=device)
 
+if "model" in state:
+    state = state["model"]
+
 model = GPT(
     config.VOCAB_SIZE,
     state["spot_pot.weight"].shape[0],
