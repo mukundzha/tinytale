@@ -21,15 +21,22 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 tok = Tokenizer.load("tokenizer/vocab.json")
 state = torch.load(CHECKPOINT, map_location=device)
 
-if "model" in state:
+# Extract model state dict (handle both formats)
+if isinstance(state, dict) and "model" in state:
     state = state["model"]
+elif isinstance(state, dict) and "state_dict" in state:
+    state = state["state_dict"]
+
+# Get model dimensions from checkpoint
+embedding_dim = state["word_pot.weight"].shape[1]
+n_layer = len([key for key in state.keys() if key.startswith("blocks.")])
 
 model = GPT(
     config.VOCAB_SIZE,
-    state["spot_pot.weight"].shape[0],
-    config.N_EMBD,
+    config.BLOCK_SIZE,
+    embedding_dim,
     config.N_HEAD,
-    config.N_LAYER,
+    n_layer,
     config.DROPOUT,
 ).to(device)
 model.load_state_dict(state)
