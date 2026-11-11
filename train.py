@@ -36,12 +36,18 @@ start_step = 0
 if CHECKPOINT.exists():
     saved = torch.load(CHECKPOINT, map_location=device)
     if "model" in saved:
-        model.load_state_dict(saved["model"])
-        optimizer.load_state_dict(saved["optimizer"])
-        start_step = saved["step"]
+        try:
+            model.load_state_dict(saved["model"])
+            optimizer.load_state_dict(saved["optimizer"])
+            start_step = saved["step"]
+            print(f"Resumed from step {start_step}")
+        except RuntimeError as e:
+            print(f"Warning: Could not load checkpoint (model size mismatch): {e}")
+            print("Starting training from scratch with current config.")
+            start_step = 0
     else:
         model.load_state_dict(saved)
-    print(f"Resumed from step {start_step}")
+        print("Resumed from step 0 (no optimizer state)")
 
 
 def save_checkpoint(step):
