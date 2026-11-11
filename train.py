@@ -30,6 +30,32 @@ model = GPT(
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=config.LEARNING_RATE)
 
+CHECKPOINT = Path(config.CHECKPOINT_DIR) / "model.pt"
+
+start_step = 0
+if CHECKPOINT.exists():
+    saved = torch.load(CHECKPOINT, map_location=device)
+    if "model" in saved:
+        model.load_state_dict(saved["model"])
+        optimizer.load_state_dict(saved["optimizer"])
+        start_step = saved["step"]
+    else:
+        model.load_state_dict(saved)
+    print(f"Resumed from step {start_step}")
+
+
+def save_checkpoint(step):
+    Path(config.CHECKPOINT_DIR).mkdir(exist_ok=True)
+    torch.save(
+        {
+            "model": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "step": step,
+        },
+        CHECKPOINT,
+    )
+    print(f"  saved checkpoint at step {step}")
+
 
 def get_batch(data):
     starts = torch.randint(len(data) - config.BLOCK_SIZE, (config.BATCH_SIZE,))
@@ -54,10 +80,11 @@ def estimate_loss():
     return losses
 
 
-for step in range(config.MAX_STEPS):
+for step in range(start_step, config.MAX_STEPS):
     if step % config.EVAL_INTERVAL == 0:
         losses = estimate_loss()
         print(f"step {step}: train {losses['train']:.4f} | val {losses['val']:.4f}")
+        save_checkpoint(step)
 
     x, y = get_batch(train_data)
     logits = model(x)
@@ -70,6 +97,5 @@ for step in range(config.MAX_STEPS):
 losses = estimate_loss()
 print(f"step {config.MAX_STEPS}: train {losses['train']:.4f} | val {losses['val']:.4f}")
 
-Path(config.CHECKPOINT_DIR).mkdir(exist_ok=True)
-torch.save(model.state_dict(), Path(config.CHECKPOINT_DIR) / "model.pt")
+save_checkpoint(config.MAX_STEPS)
 print("Model saved to checkpoints/model.pt")
